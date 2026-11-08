@@ -32,7 +32,7 @@ def save_ai_model():
 
 agent = model.Agent()
 env = make_lunar_lander()
-batch = Batch()
+batch = Batch(agent)
 
 for episode in range(config.TOTAL_EPISODES):
     print(f"episode : {episode} started")

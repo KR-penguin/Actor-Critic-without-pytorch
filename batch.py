@@ -2,7 +2,7 @@ import config
 from model import Agent
 
 class Batch:
-    def __init__(self, agent_instance):
+    def __init__(self, agent_instance : Agent):
         self.actions = []
         self.states = []
         self.rewards = []

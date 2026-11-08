@@ -1,13 +1,15 @@
+import numpy as np
 from MLP.neural_network import NeuralNetwork
-import activation_function as af
-import layer as ly
+import MLP.activation_function as af
+import MLP.layer as ly
 
 class PolicyNeuralNetwork(NeuralNetwork):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
+        self._init_network()
         self.learning_rate = 0.098
 
-    def init_network(self):
+    def _init_network(self):
         '''
         input data size = 8
         input data form(observation) = [x_position, y_position, x_velocity, y_velocity, lander_angle, 
@@ -21,8 +23,8 @@ class PolicyNeuralNetwork(NeuralNetwork):
         W2 = np.random.randn(128, 64) * np.sqrt(2 / 128) # He initial value
         b2 = np.zeros(64)
         # Hidden Layer 2
-        W3 = np.random.randn(64, 10) * np.sqrt(2 / 64) # He initial value
-        b3 = np.zeros(10)
+        W3 = np.random.randn(64, 4) * np.sqrt(2 / 64) # He initial value
+        b3 = np.zeros(4)
         
         self.layers['Affine1'] = ly.Affine(W1, b1)
         self.layers['ReLU1'] = ly.ReLU()
@@ -32,7 +34,7 @@ class PolicyNeuralNetwork(NeuralNetwork):
         self.last_layer = ly.SoftmaxWithLoss()
 
     def predict(self, x : np.array):
-        super().predict(self, x)
+        return super().predict(x)
 
     def _loss(self, x, t, td_error):
         y = self.predict(x)

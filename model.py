@@ -1,5 +1,5 @@
 from poilcy_neural_network import PolicyNeuralNetwork
-from batch import Batch
+import numpy as np
 
 class Agent:
     def __init__(self):
@@ -15,15 +15,11 @@ class Agent:
     def get_action_from_policy(self, state):
         actions_probabilities = self.policy_neural_network.get_actions_probabilities(state)
         '''
-        example output
-        {
-            NO_OPERATION : 0.7,
-            EXCUTION_LEFT_ENGINE : 0.2,
-            EXCUTION_MAIN_ENGINE :0.05,
-            EXCUTION_RIGHT_ENGINE : 0.05
-        }
+        example output = [ 0.33248537  0.01559577  1.29106821 -0.60009708]
+        
+        => [NO_OPERATION, EXCUTION_LEFT_ENGINE, EXCUTION_MAIN_ENGINE, EXCUTION_RIGHT_ENGINE]
         '''
-        action = max(action_probabilities, key=action_probabilities.get)
+        action = np.argmax(actions_probabilities)
         last_action = action
         return action
 
