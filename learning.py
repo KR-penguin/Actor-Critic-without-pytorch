@@ -3,6 +3,7 @@ import model
 import config
 import json
 from datetime import datetime
+from batch import Batch
 
 # Actions on the Lunar Lander environment
 NO_OPERATION = 0
@@ -20,7 +21,7 @@ reward funtion = "reward function table.png"
 def make_lunar_lander(render_mode: str | None = "human") -> gym.Env:
     return gym.make("LunarLander-v3", render_mode=render_mode)
 
-def save_ai_model() -> None:
+def save_ai_model():
     data = agent.get_ai_model()
     date_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     file_name = f"ai_model_{date_string}.json"
@@ -31,19 +32,22 @@ def save_ai_model() -> None:
 
 agent = model.Agent()
 env = make_lunar_lander()
+batch = Batch()
 
 for episode in range(config.TOTAL_EPISODES):
     print(f"episode : {episode} started")
     
-    try:
-        observation, _ = env.reset() # observation = state
-        terminated = False
-        truncated = False
-        while not (terminated or truncated):
-            action = agent.get_action_from_policy(state)
-            observation, reward, terminated, truncated, _ = env.step(action)
-            agent.update(action, observation, reward)
-    finally:
-        env.close()
+    observation, _ = env.reset() # observation = state
+    terminated = False
+    truncated = False
+    
+    while not (terminated or truncated):
+        action = agent.get_action_from_policy(observation)
+        observation, reward, terminated, truncated, _ = env.step(action)
+
+        if batch.is_full():
+            agent.update(batch)
+            batch.clear()
+        batch.add(action, observation, reward)
 
 save_ai_model()
