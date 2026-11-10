@@ -18,7 +18,7 @@ lander_angle, angular_velocity, left_leg_contact (boolean), right_leg_contact (b
 reward funtion = "reward function table.png"
 '''
 
-def make_lunar_lander(render_mode: str | None = "human") -> gym.Env:
+def make_lunar_lander(render_mode: str | None) -> gym.Env:
     return gym.make("LunarLander-v3", render_mode=render_mode)
 
 def save_ai_model():
@@ -31,7 +31,7 @@ def save_ai_model():
 
 
 agent = model.Agent()
-env = make_lunar_lander()
+env = make_lunar_lander(None)
 batch = Batch(agent)
 
 for episode in range(config.TOTAL_EPISODES):
@@ -40,14 +40,19 @@ for episode in range(config.TOTAL_EPISODES):
     observation, _ = env.reset() # observation = state
     terminated = False
     truncated = False
+    is_done = terminated or truncated
     
-    while not (terminated or truncated):
+    while not is_done:
+
+        last_observation = observation
         action = agent.get_action_from_policy(observation)
         observation, reward, terminated, truncated, _ = env.step(action)
+        is_done = terminated or truncated
 
-        if batch.is_full():
+        batch.add(action, last_observation, reward, observation, is_game_over = terminated)
+        if batch.is_full() or is_done:
             agent.update(batch)
             batch.clear()
-        batch.add(action, observation, reward)
+
 
 save_ai_model()

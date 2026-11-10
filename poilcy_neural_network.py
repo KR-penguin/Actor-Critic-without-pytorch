@@ -7,7 +7,7 @@ class PolicyNeuralNetwork(NeuralNetwork):
     def __init__(self):
         super().__init__()
         self._init_network()
-        self.learning_rate = 0.098
+        self.learning_rate = 1e-3
 
     def _init_network(self):
         '''
@@ -33,24 +33,28 @@ class PolicyNeuralNetwork(NeuralNetwork):
         self.layers['Affine3'] = ly.Affine(W3, b3)
         self.last_layer = ly.SoftmaxWithLoss()
 
-    def predict(self, x : np.array):
-        return super().predict(x)
+    def _predict(self, x : np.array):
+        return super()._predict(x)
 
     def _loss(self, x, t, td_error):
-        y = self.predict(x)
+        y = self._predict(x)
         return self.last_layer.forward(y, t, td_error)
 
-    def gradient(self, x, t, td_error):
-        self.loss(x, t, td_error)
+    def _gradient(self, x, t, td_error):
+        self._loss(x, t, td_error)
         dout = self.last_layer.backward()
         for layer in reversed(list(self.layers.values())):
             dout = layer.backward(dout)
 
     def get_actions_probabilities(self, state):
-        return self.predict(state)
+        y = self._predict(state)
+        return af.softmax(y)
 
-    def get_policy_log_probability_gradient(self, action, state):
-        pass
+    def compute_policy_log_probability_gradient(self, states : np.array, taken_actions : np.array, TD_error):
+        self._gradient(states, taken_actions, TD_error)
     
-    def gradient_ascent(self, objective_function_gradient):
-        pass # adam
+    def gradient_descent(self):
+        for layer in self.layers.values():
+            if hasattr(layer, 'W'):
+                layer.W = layer.W - self.learning_rate * layer.dW
+                layer.b = layer.b - self.learning_rate * layer.db
