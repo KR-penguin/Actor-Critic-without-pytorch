@@ -8,7 +8,7 @@ class StateValueNeuralNetwork(NeuralNetwork):
     def __init__(self):
         super().__init__()
         self._init_network()
-        self.learning_rate = 3e-4
+        self.learning_rate = 1e-4
 
     def _init_network(self):
         '''
