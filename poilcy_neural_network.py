@@ -58,3 +58,5 @@ class PolicyNeuralNetwork(NeuralNetwork):
             if hasattr(layer, 'W'):
                 layer.W = layer.W - self.learning_rate * layer.dW
                 layer.b = layer.b - self.learning_rate * layer.db
+
+    # 역전파 과정에서 $\delta_t \nabla_\theta \log \pi_\theta(a_t | s_t)$ 이 계산되어서 layer.dW, layer.db 에 저장된다.

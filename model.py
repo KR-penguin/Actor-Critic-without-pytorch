@@ -1,4 +1,5 @@
 from poilcy_neural_network import PolicyNeuralNetwork
+from state_value_neural_network import StateValueNeuralNetwork
 import numpy as np
 
 class Agent:
@@ -6,10 +7,10 @@ class Agent:
         self.discount_factor = 0.98
         self.last_state = None
         self.policy_neural_network = PolicyNeuralNetwork()
-        self.approximated_state_value_function_neural_network = None
+        self.state_value_neural_network = StateValueNeuralNetwork()
 
     def _get_state_value(self, states : np.array):
-        self.approximated_state_value_function_neural_network.get_approximated_state_value_function_value(states)
+        return self.state_value_neural_network.get_approximated_state_value(states)
 
     def get_action_from_policy(self, state):
         state = np.array(state).reshape(1, -1)
@@ -33,15 +34,16 @@ class Agent:
         next_states_value = np.array(self._get_state_value(next_states))
         states_value = np.array(self._get_state_value(states))
 
-        TD_error : np.array = rewards + self.discount_factor * (1 - is_game_over) * next_states_value - states_value
+        TD_target : np.array = rewards + self.discount_factor * (1 - is_game_over) * next_states_value
+        TD_error : np.array = TD_target - states_value
 
-        self._update_policy(states, actions, TD_error)
-        self._update_approximated_state_value_function(batch)
+        self._update_policy_neural_network(states, actions, TD_error)
+        self._update_state_value_neural_network(states, TD_target)
 
-    def _update_policy(self, states, actions, TD_error):
+    def _update_policy_neural_network(self, states, actions, TD_error):
         self.policy_neural_network.compute_policy_log_probability_gradient(states, actions, TD_error)
         self.policy_neural_network.gradient_descent()
 
-    def _update_approximated_state_value_function(self, batch):
-        pass
-        # self.approximated_state_value_function_neural_network.update_approximated_state_value_function(TD_target, last_state_value)
+    def _update_state_value_neural_network(self, states, TD_target):
+        self.state_value_neural_network.compute_state_value_gradients(states, TD_target)
+        self.state_value_neural_network.gradient_descent()
