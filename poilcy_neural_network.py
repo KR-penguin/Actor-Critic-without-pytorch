@@ -2,12 +2,13 @@ import numpy as np
 from MLP.neural_network import NeuralNetwork
 import MLP.activation_function as af
 import MLP.layer as ly
+from Adam import Adam
 
 class PolicyNeuralNetwork(NeuralNetwork):
     def __init__(self):
         super().__init__()
         self._init_network()
-        self.learning_rate = 3e-4
+        self.learning_rate = 1e-4
         self.entropy_coefficient = 0.05
 
     def _init_network(self):
@@ -33,6 +34,7 @@ class PolicyNeuralNetwork(NeuralNetwork):
         self.layers['ReLU2'] = ly.ReLU()
         self.layers['Affine3'] = ly.Affine(W3, b3)
         self.last_layer = ly.SoftmaxWithLoss()
+        self.optimizer = Adam(self.layers)
 
     def _predict(self, x : np.array):
         return super()._predict(x)
@@ -55,9 +57,9 @@ class PolicyNeuralNetwork(NeuralNetwork):
         self._gradient(states, taken_actions, TD_error)
     
     def gradient_descent(self):
-        for layer in self.layers.values():
-            if hasattr(layer, 'W'):
-                layer.W = layer.W - self.learning_rate * layer.dW
-                layer.b = layer.b - self.learning_rate * layer.db
+        for layer_name, layer_instance in self.layers.items():
+            if hasattr(layer_instance, 'W'):
+                layer_instance.W, layer_instance.b = self.optimizer.update(self.learning_rate, layer_name, layer_instance)
+        self.optimizer.step += 1
 
     # 역전파 과정에서 $\delta_t \nabla_\theta \log \pi_\theta(a_t | s_t)$ 이 계산되어서 layer.dW, layer.db 에 저장된다.
