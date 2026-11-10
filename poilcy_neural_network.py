@@ -7,7 +7,8 @@ class PolicyNeuralNetwork(NeuralNetwork):
     def __init__(self):
         super().__init__()
         self._init_network()
-        self.learning_rate = 1e-3
+        self.learning_rate = 3e-4
+        self.entropy_coefficient = 0.05
 
     def _init_network(self):
         '''
@@ -42,7 +43,7 @@ class PolicyNeuralNetwork(NeuralNetwork):
 
     def _gradient(self, x, t, td_error):
         self._loss(x, t, td_error)
-        dout = self.last_layer.backward()
+        dout = self.last_layer.backward(self.entropy_coefficient)
         for layer in reversed(list(self.layers.values())):
             dout = layer.backward(dout)
 
