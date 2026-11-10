@@ -3,12 +3,15 @@ from MLP.neural_network import NeuralNetwork
 import MLP.activation_function as af
 import MLP.layer as ly
 from Adam import Adam
+from config import TOTAL_EPISODES
 
 class PolicyNeuralNetwork(NeuralNetwork):
     def __init__(self):
         super().__init__()
         self._init_network()
-        self.learning_rate = 3e-4
+        self.initial_learning_rate = 3e-4
+        self.final_learning_rate = 3e-5
+        self.learning_rate = self.initial_learning_rate
         self.entropy_coefficient = 0.05
 
     def _init_network(self):
@@ -56,10 +59,11 @@ class PolicyNeuralNetwork(NeuralNetwork):
     def compute_policy_log_probability_gradient(self, states : np.array, taken_actions : np.array, TD_error):
         self._gradient(states, taken_actions, TD_error)
     
-    def gradient_descent(self):
+    def gradient_descent(self, current_episode):
         for layer_name, layer_instance in self.layers.items():
             if hasattr(layer_instance, 'W'):
                 layer_instance.W, layer_instance.b = self.optimizer.update(self.learning_rate, layer_name, layer_instance)
         self.optimizer.step += 1
+        self.learning_rate = self.initial_learning_rate - ((self.initial_learning_rate - self.final_learning_rate) * (current_episode / TOTAL_EPISODES))
 
     # 역전파 과정에서 $\delta_t \nabla_\theta \log \pi_\theta(a_t | s_t)$ 이 계산되어서 layer.dW, layer.db 에 저장된다.

@@ -24,7 +24,7 @@ class Agent:
         actions = np.random.choice(len(actions_probabilities), p=actions_probabilities)
         return actions
 
-    def update(self, batch):
+    def update(self, batch, current_episode):
         actions = np.eye(4)[np.array(batch.actions)]
         states = np.array(batch.states)
         next_states = np.array(batch.next_states)
@@ -39,8 +39,8 @@ class Agent:
 
         policy_loss, state_value_loss = self._compute_losses(states, actions, TD_error)
 
-        self._update_policy_neural_network(states, actions, TD_error)
-        self._update_state_value_neural_network(states, TD_target)
+        self._update_policy_neural_network(states, actions, TD_error, current_episode)
+        self._update_state_value_neural_network(states, TD_target, current_episode)
 
         return policy_loss, state_value_loss
 
@@ -56,13 +56,13 @@ class Agent:
         state_value_loss = np.mean(TD_error ** 2)
         return float(policy_loss), float(state_value_loss)
 
-    def _update_policy_neural_network(self, states, actions, TD_error):
+    def _update_policy_neural_network(self, states, actions, TD_error, current_episode):
         self.policy_neural_network.compute_policy_log_probability_gradient(states, actions, TD_error)
-        self.policy_neural_network.gradient_descent()
+        self.policy_neural_network.gradient_descent(current_episode)
 
-    def _update_state_value_neural_network(self, states, TD_target):
+    def _update_state_value_neural_network(self, states, TD_target, current_episode):
         self.state_value_neural_network.compute_state_value_gradients(states, TD_target)
-        self.state_value_neural_network.gradient_descent()
+        self.state_value_neural_network.gradient_descent(current_episode)
 
     def get_ai_model(self):
         policy_neural_network_data = self.policy_neural_network.get_parameters()

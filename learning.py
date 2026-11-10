@@ -33,15 +33,30 @@ def moving_average(values, window=MOVING_AVERAGE_WINDOW):
     values = np.array(values, dtype=float)
     return np.array([values[max(0, i - window + 1): i + 1].mean() for i in range(len(values))])
 
-def save_ai_model(date_string):
-    data = agent.get_ai_model()
+def save_ai_model(date_string, best_model):
+    '''
+    최근 MOVING_AVERAGE_WINDOW판 평균 reward가 가장 높았던 시점의 모델을 저장한다.
+    (학습이 MOVING_AVERAGE_WINDOW판보다 짧게 끝나면 마지막 모델을 저장한다.)
+    '''
+    if best_model["model"] is not None:
+        data = dict(best_model["model"])
+        data["best_episode"] = best_model["episode"]
+        data["best_average_reward"] = best_model["average_reward"]
+    else:
+        data = agent.get_ai_model()
+
     file_name = os.path.join(MODELS_DIRECTORY, f"ai_model_{date_string}.json")
 
     with open(file_name, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
-    print(f"saved : {file_name}")
 
-def save_training_graph(date_string, training_log):
+    if best_model["model"] is not None:
+        print(f"saved : {file_name} (best average({MOVING_AVERAGE_WINDOW}) = "
+              f"{best_model['average_reward']:.1f} at episode {best_model['episode']})")
+    else:
+        print(f"saved : {file_name} (last model - {MOVING_AVERAGE_WINDOW}판 미만이라 best 없음)")
+
+def save_training_graph(date_string, training_log, best_model):
     file_name = os.path.join(MODELS_DIRECTORY, f"training_graph_{date_string}.png")
     episodes = np.arange(len(training_log["rewards"]))
 
@@ -50,6 +65,9 @@ def save_training_graph(date_string, training_log):
     reward_axis.plot(episodes, training_log["rewards"], alpha=0.3, label="episode reward")
     reward_axis.plot(episodes, moving_average(training_log["rewards"]), label=f"moving average ({MOVING_AVERAGE_WINDOW})")
     reward_axis.axhline(200, color="green", linestyle="--", label="solved (200)")
+    if best_model["episode"] is not None:
+        reward_axis.axvline(best_model["episode"], color="red", linestyle=":",
+                            label=f"saved model (episode {best_model['episode']})")
     reward_axis.set_ylabel("total reward")
     reward_axis.legend(loc="lower right")
     reward_axis.grid(alpha=0.3)
@@ -83,11 +101,11 @@ def save_review_log(date_string, review_log):
         json.dump(review_log, file)
     print(f"saved : {file_name}")
 
-def save_all(training_log, review_log):
+def save_all(training_log, review_log, best_model):
     date_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     os.makedirs(MODELS_DIRECTORY, exist_ok=True)
-    save_ai_model(date_string)
-    save_training_graph(date_string, training_log)
+    save_ai_model(date_string, best_model)
+    save_training_graph(date_string, training_log, best_model)
     save_review_log(date_string, review_log)
 
 
@@ -104,6 +122,12 @@ training_log = {
 review_log = {
     "environment": "LunarLander-v3",
     "episodes": [], # {"episode", "seed", "reward", "actions"}
+}
+
+best_model = {
+    "average_reward": -np.inf, # 지금까지 최고 MOVING_AVERAGE_WINDOW판 평균 reward
+    "episode": None,           # 그 평균을 기록한 에피소드
+    "model": None,             # 그 시점의 모델 파라미터 (agent.get_ai_model() 결과)
 }
 
 try:
@@ -130,7 +154,7 @@ try:
 
             batch.add(action, last_observation, reward, observation, is_game_over = terminated)
             if batch.is_full() or is_done:
-                policy_loss, state_value_loss = agent.update(batch)
+                policy_loss, state_value_loss = agent.update(batch, episode)
                 policy_losses.append(policy_loss)
                 state_value_losses.append(state_value_loss)
                 batch.clear()
@@ -147,10 +171,19 @@ try:
         })
 
         average_reward = np.mean(training_log["rewards"][-MOVING_AVERAGE_WINDOW:])
+
+        # 평균이 MOVING_AVERAGE_WINDOW판으로 꽉 찬 뒤부터, 최고 평균을 갱신하면 그 시점 모델을 기억해둔다.
+        is_new_best = len(training_log["rewards"]) >= MOVING_AVERAGE_WINDOW and average_reward > best_model["average_reward"]
+        if is_new_best:
+            best_model["average_reward"] = float(average_reward)
+            best_model["episode"] = episode
+            best_model["model"] = agent.get_ai_model() # tolist()로 만든 복사본이라 이후 학습에 영향받지 않음
+
         print(f"episode {episode} : reward = {total_reward:8.1f} | "
               f"average({MOVING_AVERAGE_WINDOW}) = {average_reward:8.1f} | "
               f"policy loss = {training_log['policy_losses'][-1]:9.4f} | "
-              f"state value loss = {training_log['state_value_losses'][-1]:10.2f}")
+              f"state value loss = {training_log['state_value_losses'][-1]:10.2f}"
+              f"{' | new best' if is_new_best else ''}")
 
 except KeyboardInterrupt:
     print("\n학습 중단됨 (Ctrl+C) - 지금까지 결과를 저장합니다.")
@@ -158,4 +191,4 @@ except KeyboardInterrupt:
 finally:
     env.close()
     if training_log["rewards"]:
-        save_all(training_log, review_log)
+        save_all(training_log, review_log, best_model)
