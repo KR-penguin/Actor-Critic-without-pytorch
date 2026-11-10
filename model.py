@@ -47,3 +47,12 @@ class Agent:
     def _update_state_value_neural_network(self, states, TD_target):
         self.state_value_neural_network.compute_state_value_gradients(states, TD_target)
         self.state_value_neural_network.gradient_descent()
+
+    def get_ai_model(self):
+        policy_neural_network_data = self.policy_neural_network.get_parameters()
+        state_value_neural_network_data = self.state_value_neural_network.get_parameters()
+
+        return {
+            'policy_neural_network': policy_neural_network_data,
+            'state_value_neural_network': state_value_neural_network_data,
+        }
