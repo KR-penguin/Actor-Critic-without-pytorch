@@ -19,7 +19,7 @@ from poilcy_neural_network import PolicyNeuralNetwork
 
 
 MODELS_DIRECTORY = "models"
-IS_GREEDY = False # True: argmax(greedy) / False: 확률 샘플링
+IS_GREEDY = True # True: argmax(greedy) / False: 확률 샘플링
 
 
 def find_latest_model_file():
